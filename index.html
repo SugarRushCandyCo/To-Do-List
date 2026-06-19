@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Lists</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #e8f0e9;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(120,180,100,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(80,140,90,0.1) 0%, transparent 50%);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e3a1f;
+    letter-spacing: -0.3px;
+  }
+
+  /* Board */
+  #board {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 12px;
+  }
+
+  /* List column */
+  .list {
+    background: #f0f4f0;
+    border-radius: 12px;
+    width: 240px;
+    flex-shrink: 0;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .list-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e3a1f;
+    cursor: pointer;
+    flex: 1;
+    padding: 3px 4px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: transparent;
+    outline: none;
+  }
+
+  .list-title:hover { background: #e4ece4; }
+  .list-title:focus { border-color: #5a9e60; background: #fff; }
+
+  .list-menu-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #7a9a7c;
+    font-size: 18px;
+    padding: 0 4px;
+    border-radius: 5px;
+    line-height: 1;
+  }
+  .list-menu-btn:hover { background: #e0ebe0; color: #1e3a1f; }
+
+  /* Cards */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 9px 10px;
+    font-size: 13px;
+    color: #2a2a2a;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    cursor: default;
+    position: relative;
+  }
+
+  .card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+  .card-check {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: 2px solid #d0d8d0;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .card-check.done {
+    background: #5a9e60;
+    border-color: #5a9e60;
+  }
+
+  .card-check.done::after {
+    content: '';
+    width: 5px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translateY(-1px);
+    display: block;
+  }
+
+  .card-text {
+    flex: 1;
+    line-height: 1.4;
+    word-break: break-word;
+    outline: none;
+    border-radius: 3px;
+  }
+
+  .card-text[contenteditable="true"]:focus {
+    background: #f7fcf7;
+    box-shadow: 0 0 0 2px #5a9e60;
+  }
+
+  .card.done .card-text {
+    text-decoration: line-through;
+    color: #aaa;
+  }
+
+  .card-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ccc;
+    font-size: 16px;
+    padding: 0 2px;
+    opacity: 0;
+    transition: opacity 0.1s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .card:hover .card-delete { opacity: 1; }
+  .card-delete:hover { color: #e05050; }
+
+  /* Tag strip */
+  .card-tags {
+    margin-top: 6px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    height: 5px;
+    width: 32px;
+    border-radius: 3px;
+  }
+
+  /* Add card button */
+  .add-card-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 6px;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    color: #6a906c;
+    cursor: pointer;
+    text-align: left;
+  }
+  .add-card-btn:hover { background: #e0ebe0; color: #1e3a1f; }
+
+  /* Add card input area */
+  .add-card-form {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .add-card-form.open { display: flex; }
+
+  .add-card-input {
+    background: #fff;
+    border: 1.5px solid #5a9e60;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    min-height: 60px;
+    color: #1e3a1f;
+  }
+
+  .add-card-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: #5a9e60;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: #4a8a50; }
+
+  .btn-cancel {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #888;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .btn-cancel:hover { color: #e05050; }
+
+  /* Add new list column */
+  .add-list-col {
+    width: 240px;
+    flex-shrink: 0;
+  }
+
+  .add-list-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.55);
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #3a6e3c;
+    cursor: pointer;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+  }
+  .add-list-btn:hover { background: rgba(255,255,255,0.8); }
+
+  .add-list-form {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    background: #f0f4f0;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .add-list-form.open { display: flex; }
+
+  .add-list-input {
+    border: 1.5px solid #5a9e60;
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    outline: none;
+    color: #1e3a1f;
+    background: #fff;
+  }
+
+  .add-list-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  /* Delete list */
+  .list-dropdown {
+    position: absolute;
+    right: 12px;
+    top: 40px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+    z-index: 100;
+    overflow: hidden;
+    min-width: 150px;
+    display: none;
+  }
+
+  .list-dropdown.open { display: block; }
+
+  .list-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 14px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    color: #2a2a2a;
+  }
+  .list-dropdown button:hover { background: #f5f5f5; }
+  .list-dropdown button.danger { color: #e05050; }
+  .list-dropdown button.danger:hover { background: #fff0f0; }
+
+  .list { position: relative; }
+
+  /* Scrollbar */
+  #board::-webkit-scrollbar { height: 6px; }
+  #board::-webkit-scrollbar-track { background: transparent; }
+  #board::-webkit-scrollbar-thumb { background: #b0c8b2; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 My Lists</h1>
+</header>
+
+<div id="board"></div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'todo_board_v1';
+const TAG_COLORS = ['#5a9e60','#e0c040','#e07050','#5090d0','#9060c0','#50b0a0'];
+
+let state = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    lists: [
+      { id: uid(), title: 'To Do', cards: [
+        { id: uid(), text: 'Click the circle to mark done', done: false, color: TAG_COLORS[0] },
+        { id: uid(), text: 'Double-click card text to edit it', done: false, color: TAG_COLORS[1] },
+      ]},
+      { id: uid(), title: 'In Progress', cards: [] },
+      { id: uid(), title: 'Done', cards: [] },
+    ]
+  };
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2,10);
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+const board = document.getElementById('board');
+
+function render() {
+  board.innerHTML = '';
+  state.lists.forEach(list => board.appendChild(makeList(list)));
+  board.appendChild(makeAddListCol());
+}
+
+function makeList(list) {
+  const col = document.createElement('div');
+  col.className = 'list';
+  col.dataset.id = list.id;
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'list-header';
+
+  const titleInput = document.createElement('input');
+  titleInput.className = 'list-title';
+  titleInput.value = list.title;
+  titleInput.addEventListener('change', () => {
+    list.title = titleInput.value.trim() || 'Untitled';
+    save();
+  });
+
+  const menuBtn = document.createElement('button');
+  menuBtn.className = 'list-menu-btn';
+  menuBtn.textContent = '···';
+  menuBtn.title = 'List options';
+
+  header.append(titleInput, menuBtn);
+
+  // Dropdown menu
+  const dropdown = document.createElement('div');
+  dropdown.className = 'list-dropdown';
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'danger';
+  delBtn.textContent = '🗑 Delete this list';
+  delBtn.addEventListener('click', () => {
+    if (confirm(`Delete "${list.title}"?`)) {
+      state.lists = state.lists.filter(l => l.id !== list.id);
+      save(); render();
+    }
+  });
+
+  dropdown.appendChild(delBtn);
+
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  document.addEventListener('click', () => dropdown.classList.remove('open'), { capture: false });
+
+  // Cards
+  const cardsEl = document.createElement('div');
+  cardsEl.className = 'cards';
+  list.cards.forEach(card => cardsEl.appendChild(makeCard(card, list)));
+
+  // Add card form
+  const addForm = document.createElement('div');
+  addForm.className = 'add-card-form';
+
+  const addInput = document.createElement('textarea');
+  addInput.className = 'add-card-input';
+  addInput.placeholder = 'Add a card…';
+
+  const addActions = document.createElement('div');
+  addActions.className = 'add-card-actions';
+
+  const addConfirm = document.createElement('button');
+  addConfirm.className = 'btn-primary';
+  addConfirm.textContent = 'Add card';
+
+  const addCancel = document.createElement('button');
+  addCancel.className = 'btn-cancel';
+  addCancel.innerHTML = '✕';
+
+  addActions.append(addConfirm, addCancel);
+  addForm.append(addInput, addActions);
+
+  addConfirm.addEventListener('click', () => {
+    const text = addInput.value.trim();
+    if (!text) return;
+    const color = TAG_COLORS[list.cards.length % TAG_COLORS.length];
+    list.cards.push({ id: uid(), text, done: false, color });
+    save(); render();
+    // re-open form after render
+    const newCol = board.querySelector(`[data-id="${list.id}"]`);
+    if (newCol) {
+      const form = newCol.querySelector('.add-card-form');
+      form.classList.add('open');
+      form.querySelector('textarea').focus();
+      newCol.querySelector('.add-card-btn').style.display = 'none';
+    }
+  });
+
+  addCancel.addEventListener('click', () => {
+    addForm.classList.remove('open');
+    addCardBtn.style.display = '';
+    addInput.value = '';
+  });
+
+  addInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addConfirm.click(); }
+    if (e.key === 'Escape') addCancel.click();
+  });
+
+  // Add card button
+  const addCardBtn = document.createElement('button');
+  addCardBtn.className = 'add-card-btn';
+  addCardBtn.innerHTML = '<span style="font-size:18px;line-height:1">+</span> Add a card';
+
+  addCardBtn.addEventListener('click', () => {
+    addForm.classList.add('open');
+    addCardBtn.style.display = 'none';
+    addInput.focus();
+  });
+
+  col.append(header, dropdown, cardsEl, addForm, addCardBtn);
+  return col;
+}
+
+function makeCard(card, list) {
+  const el = document.createElement('div');
+  el.className = 'card' + (card.done ? ' done' : '');
+
+  const check = document.createElement('div');
+  check.className = 'card-check' + (card.done ? ' done' : '');
+  check.title = card.done ? 'Mark undone' : 'Mark done';
+  check.addEventListener('click', () => {
+    card.done = !card.done;
+    save(); render();
+  });
+
+  const textEl = document.createElement('div');
+  textEl.className = 'card-text';
+  textEl.textContent = card.text;
+  textEl.title = 'Double-click to edit';
+
+  textEl.addEventListener('dblclick', () => {
+    textEl.contentEditable = 'true';
+    textEl.focus();
+    const range = document.createRange();
+    range.selectNodeContents(textEl);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
+
+  textEl.addEventListener('blur', () => {
+    textEl.contentEditable = 'false';
+    const newText = textEl.textContent.trim();
+    if (newText) { card.text = newText; } else { textEl.textContent = card.text; }
+    save();
+  });
+
+  textEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); textEl.blur(); }
+    if (e.key === 'Escape') { textEl.textContent = card.text; textEl.blur(); }
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'card-delete';
+  delBtn.innerHTML = '✕';
+  delBtn.title = 'Delete card';
+  delBtn.addEventListener('click', () => {
+    list.cards = list.cards.filter(c => c.id !== card.id);
+    save(); render();
+  });
+
+  const inner = document.createElement('div');
+  inner.style.flex = '1';
+  inner.style.display = 'flex';
+  inner.style.flexDirection = 'column';
+
+  const tags = document.createElement('div');
+  tags.className = 'card-tags';
+  const tag = document.createElement('div');
+  tag.className = 'tag';
+  tag.style.background = card.color;
+  tags.appendChild(tag);
+
+  inner.append(textEl, tags);
+  el.append(check, inner, delBtn);
+  return el;
+}
+
+function makeAddListCol() {
+  const col = document.createElement('div');
+  col.className = 'add-list-col';
+
+  const btn = document.createElement('button');
+  btn.className = 'add-list-btn';
+  btn.innerHTML = '<span style="font-size:18px;line-height:1">+</span> Add a list';
+
+  const form = document.createElement('div');
+  form.className = 'add-list-form';
+
+  const input = document.createElement('input');
+  input.className = 'add-list-input';
+  input.placeholder = 'List title…';
+  input.maxLength = 60;
+
+  const actions = document.createElement('div');
+  actions.className = 'add-list-actions';
+
+  const confirm = document.createElement('button');
+  confirm.className = 'btn-primary';
+  confirm.textContent = 'Add list';
+
+  const cancel = document.createElement('button');
+  cancel.className = 'btn-cancel';
+  cancel.innerHTML = '✕';
+
+  actions.append(confirm, cancel);
+  form.append(input, actions);
+  col.append(btn, form);
+
+  btn.addEventListener('click', () => {
+    form.classList.add('open');
+    btn.style.display = 'none';
+    input.focus();
+  });
+
+  confirm.addEventListener('click', () => {
+    const title = input.value.trim();
+    if (!title) return;
+    state.lists.push({ id: uid(), title, cards: [] });
+    save(); render();
+  });
+
+  cancel.addEventListener('click', () => {
+    form.classList.remove('open');
+    btn.style.display = '';
+    input.value = '';
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirm.click();
+    if (e.key === 'Escape') cancel.click();
+  });
+
+  return col;
+}
+
+render();
+</script>
+</body>
+</html>
