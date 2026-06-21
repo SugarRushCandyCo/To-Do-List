@@ -31,7 +31,6 @@
     letter-spacing: -0.3px;
   }
 
-  /* Board */
   #board {
     display: flex;
     gap: 14px;
@@ -40,7 +39,6 @@
     padding-bottom: 12px;
   }
 
-  /* List column */
   .list {
     background: #f0f4f0;
     border-radius: 12px;
@@ -48,6 +46,16 @@
     flex-shrink: 0;
     padding: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    position: relative;
+  }
+
+  .list.drag-over-list {
+    outline: 2px dashed #5a9e60;
+    outline-offset: -2px;
+  }
+
+  .list.dragging-list {
+    opacity: 0.4;
   }
 
   .list-header {
@@ -55,7 +63,10 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 10px;
+    cursor: grab;
   }
+
+  .list-header:active { cursor: grabbing; }
 
   .list-title {
     font-size: 14px;
@@ -85,12 +96,12 @@
   }
   .list-menu-btn:hover { background: #e0ebe0; color: #1e3a1f; }
 
-  /* Cards */
   .cards {
     display: flex;
     flex-direction: column;
     gap: 7px;
     margin-bottom: 8px;
+    min-height: 4px;
   }
 
   .card {
@@ -103,11 +114,34 @@
     align-items: flex-start;
     gap: 8px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    cursor: default;
+    cursor: grab;
     position: relative;
+    user-select: none;
   }
 
+  .card:active { cursor: grabbing; }
   .card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+  .card.dragging {
+    opacity: 0.35;
+  }
+
+  .card-placeholder {
+    background: #d8ead8;
+    border: 2px dashed #5a9e60;
+    border-radius: 8px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+
+  .list-placeholder {
+    background: rgba(90,158,96,0.12);
+    border: 2px dashed #5a9e60;
+    border-radius: 12px;
+    width: 240px;
+    flex-shrink: 0;
+    min-height: 80px;
+  }
 
   .card-check {
     width: 17px;
@@ -173,7 +207,6 @@
   .card:hover .card-delete { opacity: 1; }
   .card-delete:hover { color: #e05050; }
 
-  /* Tag strip */
   .card-tags {
     margin-top: 6px;
     display: flex;
@@ -187,7 +220,6 @@
     border-radius: 3px;
   }
 
-  /* Add card button */
   .add-card-btn {
     display: flex;
     align-items: center;
@@ -204,7 +236,6 @@
   }
   .add-card-btn:hover { background: #e0ebe0; color: #1e3a1f; }
 
-  /* Add card input area */
   .add-card-form {
     display: none;
     flex-direction: column;
@@ -255,7 +286,6 @@
   }
   .btn-cancel:hover { color: #e05050; }
 
-  /* Add new list column */
   .add-list-col {
     width: 240px;
     flex-shrink: 0;
@@ -307,7 +337,6 @@
     align-items: center;
   }
 
-  /* Delete list */
   .list-dropdown {
     position: absolute;
     right: 12px;
@@ -338,9 +367,6 @@
   .list-dropdown button.danger { color: #e05050; }
   .list-dropdown button.danger:hover { background: #fff0f0; }
 
-  .list { position: relative; }
-
-  /* Scrollbar */
   #board::-webkit-scrollbar { height: 6px; }
   #board::-webkit-scrollbar-track { background: transparent; }
   #board::-webkit-scrollbar-thumb { background: #b0c8b2; border-radius: 3px; }
@@ -355,7 +381,6 @@
 <div id="board"></div>
 
 <script>
-// ─── State ────────────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'todo_board_v1';
 const TAG_COLORS = ['#5a9e60','#e0c040','#e07050','#5090d0','#9060c0','#50b0a0'];
 
@@ -386,9 +411,13 @@ function uid() {
   return Math.random().toString(36).slice(2,10);
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
+// ─── Drag state ───────────────────────────────────────────────────────────────
+let drag = null;
+// drag = { type: 'card'|'list', el, ghost, listId, cardId, listIndex, cardIndex, startX, startY }
+
 const board = document.getElementById('board');
 
+// ─── Render ───────────────────────────────────────────────────────────────────
 function render() {
   board.innerHTML = '';
   state.lists.forEach(list => board.appendChild(makeList(list)));
@@ -400,7 +429,6 @@ function makeList(list) {
   col.className = 'list';
   col.dataset.id = list.id;
 
-  // Header
   const header = document.createElement('div');
   header.className = 'list-header';
 
@@ -411,15 +439,22 @@ function makeList(list) {
     list.title = titleInput.value.trim() || 'Untitled';
     save();
   });
+  titleInput.addEventListener('mousedown', e => e.stopPropagation());
 
   const menuBtn = document.createElement('button');
   menuBtn.className = 'list-menu-btn';
   menuBtn.textContent = '···';
   menuBtn.title = 'List options';
+  menuBtn.addEventListener('mousedown', e => e.stopPropagation());
 
   header.append(titleInput, menuBtn);
 
-  // Dropdown menu
+  // List drag — from header
+  header.addEventListener('mousedown', (e) => {
+    if (e.target === titleInput || e.target === menuBtn) return;
+    startListDrag(e, col, list);
+  });
+
   const dropdown = document.createElement('div');
   dropdown.className = 'list-dropdown';
 
@@ -442,12 +477,11 @@ function makeList(list) {
 
   document.addEventListener('click', () => dropdown.classList.remove('open'), { capture: false });
 
-  // Cards
   const cardsEl = document.createElement('div');
   cardsEl.className = 'cards';
+  cardsEl.dataset.listId = list.id;
   list.cards.forEach(card => cardsEl.appendChild(makeCard(card, list)));
 
-  // Add card form
   const addForm = document.createElement('div');
   addForm.className = 'add-card-form';
 
@@ -475,7 +509,6 @@ function makeList(list) {
     const color = TAG_COLORS[list.cards.length % TAG_COLORS.length];
     list.cards.push({ id: uid(), text, done: false, color });
     save(); render();
-    // re-open form after render
     const newCol = board.querySelector(`[data-id="${list.id}"]`);
     if (newCol) {
       const form = newCol.querySelector('.add-card-form');
@@ -496,7 +529,6 @@ function makeList(list) {
     if (e.key === 'Escape') addCancel.click();
   });
 
-  // Add card button
   const addCardBtn = document.createElement('button');
   addCardBtn.className = 'add-card-btn';
   addCardBtn.innerHTML = '<span style="font-size:18px;line-height:1">+</span> Add a card';
@@ -514,11 +546,14 @@ function makeList(list) {
 function makeCard(card, list) {
   const el = document.createElement('div');
   el.className = 'card' + (card.done ? ' done' : '');
+  el.dataset.id = card.id;
+  el.dataset.listId = list.id;
 
   const check = document.createElement('div');
   check.className = 'card-check' + (card.done ? ' done' : '');
   check.title = card.done ? 'Mark undone' : 'Mark done';
-  check.addEventListener('click', () => {
+  check.addEventListener('click', (e) => {
+    e.stopPropagation();
     card.done = !card.done;
     save(); render();
   });
@@ -528,7 +563,8 @@ function makeCard(card, list) {
   textEl.textContent = card.text;
   textEl.title = 'Double-click to edit';
 
-  textEl.addEventListener('dblclick', () => {
+  textEl.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
     textEl.contentEditable = 'true';
     textEl.focus();
     const range = document.createRange();
@@ -553,7 +589,8 @@ function makeCard(card, list) {
   delBtn.className = 'card-delete';
   delBtn.innerHTML = '✕';
   delBtn.title = 'Delete card';
-  delBtn.addEventListener('click', () => {
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     list.cards = list.cards.filter(c => c.id !== card.id);
     save(); render();
   });
@@ -562,6 +599,7 @@ function makeCard(card, list) {
   inner.style.flex = '1';
   inner.style.display = 'flex';
   inner.style.flexDirection = 'column';
+  inner.style.pointerEvents = 'none';
 
   const tags = document.createElement('div');
   tags.className = 'card-tags';
@@ -571,7 +609,16 @@ function makeCard(card, list) {
   tags.appendChild(tag);
 
   inner.append(textEl, tags);
+  inner.querySelector('.card-text').style.pointerEvents = 'auto';
   el.append(check, inner, delBtn);
+
+  // Card drag
+  el.addEventListener('mousedown', (e) => {
+    if (e.target === check || e.target === delBtn || textEl.contentEditable === 'true') return;
+    if (e.target === textEl || textEl.contains(e.target)) return;
+    startCardDrag(e, el, card, list);
+  });
+
   return el;
 }
 
@@ -631,6 +678,201 @@ function makeAddListCol() {
   });
 
   return col;
+}
+
+// ─── Drag & Drop ──────────────────────────────────────────────────────────────
+
+function createGhost(el, x, y) {
+  const rect = el.getBoundingClientRect();
+  const ghost = el.cloneNode(true);
+  ghost.style.cssText = `
+    position: fixed;
+    left: ${rect.left}px;
+    top: ${rect.top}px;
+    width: ${rect.width}px;
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    transform: rotate(1.5deg);
+    transition: none;
+  `;
+  document.body.appendChild(ghost);
+  return { ghost, offsetX: x - rect.left, offsetY: y - rect.top };
+}
+
+function moveGhost(ghost, x, y, offsetX, offsetY) {
+  ghost.style.left = (x - offsetX) + 'px';
+  ghost.style.top = (y - offsetY) + 'px';
+}
+
+// ── Card drag ─────────────────────────────────────────────────────────────────
+
+function startCardDrag(e, el, card, list) {
+  e.preventDefault();
+  const { ghost, offsetX, offsetY } = createGhost(el, e.clientX, e.clientY);
+  el.classList.add('dragging');
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'card-placeholder';
+
+  drag = { type: 'card', el, ghost, offsetX, offsetY, placeholder,
+           cardId: card.id, srcListId: list.id };
+
+  // Insert placeholder where card was
+  el.parentNode.insertBefore(placeholder, el.nextSibling);
+
+  document.addEventListener('mousemove', onCardMove);
+  document.addEventListener('mouseup', onCardUp);
+}
+
+function onCardMove(e) {
+  if (!drag || drag.type !== 'card') return;
+  moveGhost(drag.ghost, e.clientX, e.clientY, drag.offsetX, drag.offsetY);
+
+  // Find which cards container we're over
+  const cardsEls = document.querySelectorAll('.cards');
+  let targetCards = null;
+  let targetListId = null;
+
+  for (const c of cardsEls) {
+    const r = c.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 10 && e.clientY <= r.bottom + 10) {
+      targetCards = c;
+      targetListId = c.dataset.listId;
+      break;
+    }
+  }
+
+  if (!targetCards) return;
+
+  // Find insertion point among card children (skip placeholder & dragging card)
+  const children = [...targetCards.children].filter(c => !c.classList.contains('card-placeholder') && !c.classList.contains('dragging'));
+  let inserted = false;
+
+  for (const child of children) {
+    const r = child.getBoundingClientRect();
+    const mid = r.top + r.height / 2;
+    if (e.clientY < mid) {
+      targetCards.insertBefore(drag.placeholder, child);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) targetCards.appendChild(drag.placeholder);
+}
+
+function onCardUp(e) {
+  if (!drag || drag.type !== 'card') return;
+  document.removeEventListener('mousemove', onCardMove);
+  document.removeEventListener('mouseup', onCardUp);
+
+  drag.ghost.remove();
+  drag.el.classList.remove('dragging');
+
+  // Find the placeholder's parent and position
+  const ph = drag.placeholder;
+  const targetCardsEl = ph.parentNode;
+  const targetListId = targetCardsEl ? targetCardsEl.dataset.listId : null;
+
+  if (targetListId && targetCardsEl) {
+    const siblings = [...targetCardsEl.children].filter(c => !c.classList.contains('card-placeholder'));
+    const insertIndex = [...targetCardsEl.children].indexOf(ph);
+
+    // Remove card from source list
+    const srcList = state.lists.find(l => l.id === drag.srcListId);
+    const cardObj = srcList.cards.find(c => c.id === drag.cardId);
+    srcList.cards = srcList.cards.filter(c => c.id !== drag.cardId);
+
+    // Insert into target list
+    const tgtList = state.lists.find(l => l.id === targetListId);
+
+    // Count how many real card elements are before the placeholder
+    const allChildren = [...targetCardsEl.children];
+    let realIndex = 0;
+    for (let i = 0; i < allChildren.length; i++) {
+      if (allChildren[i] === ph) break;
+      if (!allChildren[i].classList.contains('card-placeholder')) realIndex++;
+    }
+
+    tgtList.cards.splice(realIndex, 0, cardObj);
+    save();
+  }
+
+  ph.remove();
+  drag = null;
+  render();
+}
+
+// ── List drag ─────────────────────────────────────────────────────────────────
+
+function startListDrag(e, el, list) {
+  e.preventDefault();
+  const { ghost, offsetX, offsetY } = createGhost(el, e.clientX, e.clientY);
+  el.classList.add('dragging-list');
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'list-placeholder';
+  placeholder.style.height = el.offsetHeight + 'px';
+  el.parentNode.insertBefore(placeholder, el.nextSibling);
+
+  drag = { type: 'list', el, ghost, offsetX, offsetY, placeholder, listId: list.id };
+
+  document.addEventListener('mousemove', onListMove);
+  document.addEventListener('mouseup', onListUp);
+}
+
+function onListMove(e) {
+  if (!drag || drag.type !== 'list') return;
+  moveGhost(drag.ghost, e.clientX, e.clientY, drag.offsetX, drag.offsetY);
+
+  const lists = [...board.children].filter(c =>
+    c.classList.contains('list') && !c.classList.contains('dragging-list') && !c.classList.contains('list-placeholder')
+  );
+
+  let inserted = false;
+  for (const li of lists) {
+    const r = li.getBoundingClientRect();
+    const mid = r.left + r.width / 2;
+    if (e.clientX < mid) {
+      board.insertBefore(drag.placeholder, li);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) {
+    const addCol = board.querySelector('.add-list-col');
+    board.insertBefore(drag.placeholder, addCol);
+  }
+}
+
+function onListUp(e) {
+  if (!drag || drag.type !== 'list') return;
+  document.removeEventListener('mousemove', onListMove);
+  document.removeEventListener('mouseup', onListUp);
+
+  drag.ghost.remove();
+  drag.el.classList.remove('dragging-list');
+
+  const ph = drag.placeholder;
+  const boardChildren = [...board.children].filter(c => !c.classList.contains('add-list-col'));
+  const phIndex = boardChildren.indexOf(ph);
+
+  // Count real list columns before placeholder
+  let realIndex = 0;
+  for (let i = 0; i < phIndex; i++) {
+    if (boardChildren[i].classList.contains('list') && !boardChildren[i].classList.contains('dragging-list')) realIndex++;
+  }
+
+  // Reorder state
+  const srcIndex = state.lists.findIndex(l => l.id === drag.listId);
+  const [removed] = state.lists.splice(srcIndex, 1);
+  state.lists.splice(realIndex, 0, removed);
+  save();
+
+  ph.remove();
+  drag = null;
+  render();
 }
 
 render();
