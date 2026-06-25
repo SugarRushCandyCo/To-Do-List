@@ -6,7 +6,6 @@
 <title>My Lists</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: #e8f0e9;
@@ -16,21 +15,8 @@
     min-height: 100vh;
     padding: 24px;
   }
-
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  header h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #1e3a1f;
-    letter-spacing: -0.3px;
-  }
-
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  header h1 { font-size: 22px; font-weight: 700; color: #1e3a1f; letter-spacing: -0.3px; }
   #board {
     display: flex;
     gap: 14px;
@@ -38,7 +24,6 @@
     overflow-x: auto;
     padding-bottom: 12px;
   }
-
   .list {
     background: #f0f4f0;
     border-radius: 12px;
@@ -47,27 +32,31 @@
     padding: 12px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     position: relative;
+    transition: opacity 0.1s;
   }
-
-  .list.drag-over-list {
-    outline: 2px dashed #5a9e60;
-    outline-offset: -2px;
-  }
-
-  .list.dragging-list {
-    opacity: 0.4;
-  }
-
+  .list.dragging-list { opacity: 0.35; }
   .list-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 10px;
-    cursor: grab;
   }
-
-  .list-header:active { cursor: grabbing; }
-
+  .list-drag-handle {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: #aabcaa;
+    font-size: 15px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    user-select: none;
+    letter-spacing: -1px;
+  }
+  .list-drag-handle:hover { background: #e0ebe0; color: #5a9e60; cursor: grab; }
+  .list-drag-handle:active { cursor: grabbing; }
   .list-title {
     font-size: 14px;
     font-weight: 700;
@@ -80,10 +69,8 @@
     background: transparent;
     outline: none;
   }
-
   .list-title:hover { background: #e4ece4; }
   .list-title:focus { border-color: #5a9e60; background: #fff; }
-
   .list-menu-btn {
     background: none;
     border: none;
@@ -93,9 +80,9 @@
     padding: 0 4px;
     border-radius: 5px;
     line-height: 1;
+    flex-shrink: 0;
   }
   .list-menu-btn:hover { background: #e0ebe0; color: #1e3a1f; }
-
   .cards {
     display: flex;
     flex-direction: column;
@@ -103,7 +90,6 @@
     margin-bottom: 8px;
     min-height: 4px;
   }
-
   .card {
     background: #fff;
     border-radius: 8px;
@@ -117,32 +103,27 @@
     cursor: grab;
     position: relative;
     user-select: none;
+    transition: box-shadow 0.12s;
   }
-
   .card:active { cursor: grabbing; }
   .card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-
-  .card.dragging {
-    opacity: 0.35;
-  }
-
+  .card.dragging { opacity: 0.3; }
   .card-placeholder {
     background: #d8ead8;
     border: 2px dashed #5a9e60;
     border-radius: 8px;
     height: 38px;
     flex-shrink: 0;
+    pointer-events: none;
   }
-
   .list-placeholder {
     background: rgba(90,158,96,0.12);
     border: 2px dashed #5a9e60;
     border-radius: 12px;
     width: 240px;
     flex-shrink: 0;
-    min-height: 80px;
+    pointer-events: none;
   }
-
   .card-check {
     width: 17px;
     height: 17px;
@@ -156,12 +137,7 @@
     justify-content: center;
     transition: border-color 0.15s, background 0.15s;
   }
-
-  .card-check.done {
-    background: #5a9e60;
-    border-color: #5a9e60;
-  }
-
+  .card-check.done { background: #5a9e60; border-color: #5a9e60; }
   .card-check.done::after {
     content: '';
     width: 5px;
@@ -172,7 +148,6 @@
     transform: rotate(45deg) translateY(-1px);
     display: block;
   }
-
   .card-text {
     flex: 1;
     line-height: 1.4;
@@ -180,17 +155,8 @@
     outline: none;
     border-radius: 3px;
   }
-
-  .card-text[contenteditable="true"]:focus {
-    background: #f7fcf7;
-    box-shadow: 0 0 0 2px #5a9e60;
-  }
-
-  .card.done .card-text {
-    text-decoration: line-through;
-    color: #aaa;
-  }
-
+  .card-text[contenteditable="true"]:focus { background: #f7fcf7; box-shadow: 0 0 0 2px #5a9e60; }
+  .card.done .card-text { text-decoration: line-through; color: #aaa; }
   .card-delete {
     background: none;
     border: none;
@@ -203,23 +169,10 @@
     flex-shrink: 0;
     line-height: 1;
   }
-
   .card:hover .card-delete { opacity: 1; }
   .card-delete:hover { color: #e05050; }
-
-  .card-tags {
-    margin-top: 6px;
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .tag {
-    height: 5px;
-    width: 32px;
-    border-radius: 3px;
-  }
-
+  .card-tags { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag { height: 5px; width: 32px; border-radius: 3px; }
   .add-card-btn {
     display: flex;
     align-items: center;
@@ -235,15 +188,8 @@
     text-align: left;
   }
   .add-card-btn:hover { background: #e0ebe0; color: #1e3a1f; }
-
-  .add-card-form {
-    display: none;
-    flex-direction: column;
-    gap: 6px;
-  }
-
+  .add-card-form { display: none; flex-direction: column; gap: 6px; }
   .add-card-form.open { display: flex; }
-
   .add-card-input {
     background: #fff;
     border: 1.5px solid #5a9e60;
@@ -256,13 +202,7 @@
     min-height: 60px;
     color: #1e3a1f;
   }
-
-  .add-card-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
+  .add-card-actions { display: flex; gap: 6px; align-items: center; }
   .btn-primary {
     background: #5a9e60;
     color: #fff;
@@ -274,7 +214,6 @@
     cursor: pointer;
   }
   .btn-primary:hover { background: #4a8a50; }
-
   .btn-cancel {
     background: none;
     border: none;
@@ -285,12 +224,7 @@
     line-height: 1;
   }
   .btn-cancel:hover { color: #e05050; }
-
-  .add-list-col {
-    width: 240px;
-    flex-shrink: 0;
-  }
-
+  .add-list-col { width: 240px; flex-shrink: 0; }
   .add-list-btn {
     display: flex;
     align-items: center;
@@ -307,7 +241,6 @@
     backdrop-filter: blur(4px);
   }
   .add-list-btn:hover { background: rgba(255,255,255,0.8); }
-
   .add-list-form {
     display: none;
     flex-direction: column;
@@ -318,7 +251,6 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
   .add-list-form.open { display: flex; }
-
   .add-list-input {
     border: 1.5px solid #5a9e60;
     border-radius: 7px;
@@ -330,13 +262,7 @@
     color: #1e3a1f;
     background: #fff;
   }
-
-  .add-list-actions {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
+  .add-list-actions { display: flex; gap: 6px; align-items: center; }
   .list-dropdown {
     position: absolute;
     right: 12px;
@@ -349,9 +275,7 @@
     min-width: 150px;
     display: none;
   }
-
   .list-dropdown.open { display: block; }
-
   .list-dropdown button {
     display: block;
     width: 100%;
@@ -366,10 +290,18 @@
   .list-dropdown button:hover { background: #f5f5f5; }
   .list-dropdown button.danger { color: #e05050; }
   .list-dropdown button.danger:hover { background: #fff0f0; }
-
   #board::-webkit-scrollbar { height: 6px; }
   #board::-webkit-scrollbar-track { background: transparent; }
   #board::-webkit-scrollbar-thumb { background: #b0c8b2; border-radius: 3px; }
+  .ghost-el {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+    will-change: transform;
+    transform: rotate(1.5deg) scale(1.02);
+    opacity: 0.9;
+  }
 </style>
 </head>
 <body>
@@ -396,6 +328,7 @@ function load() {
       { id: uid(), title: 'To Do', cards: [
         { id: uid(), text: 'Click the circle to mark done', done: false, color: TAG_COLORS[0] },
         { id: uid(), text: 'Double-click card text to edit it', done: false, color: TAG_COLORS[1] },
+        { id: uid(), text: 'Drag the ⠿ handle to move lists', done: false, color: TAG_COLORS[2] },
       ]},
       { id: uid(), title: 'In Progress', cards: [] },
       { id: uid(), title: 'Done', cards: [] },
@@ -403,19 +336,52 @@ function load() {
   };
 }
 
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+const board = document.getElementById('board');
+
+// ─── Ghost element ────────────────────────────────────────────────────────────
+let ghostEl = null;
+let ghostOffX = 0, ghostOffY = 0;
+let mouseX = 0, mouseY = 0;
+let rafId = null;
+
+function createGhost(sourceEl, clientX, clientY) {
+  const rect = sourceEl.getBoundingClientRect();
+  if (ghostEl) ghostEl.remove();
+  ghostEl = sourceEl.cloneNode(true);
+  ghostEl.className = ghostEl.className.replace('dragging','').replace('dragging-list','').trim() + ' ghost-el';
+  ghostEl.style.width = rect.width + 'px';
+  ghostEl.style.left = rect.left + 'px';
+  ghostEl.style.top = rect.top + 'px';
+  document.body.appendChild(ghostEl);
+  ghostOffX = clientX - rect.left;
+  ghostOffY = clientY - rect.top;
+  mouseX = clientX;
+  mouseY = clientY;
+  scheduleGhostUpdate();
 }
 
-function uid() {
-  return Math.random().toString(36).slice(2,10);
+function scheduleGhostUpdate() {
+  if (rafId) return;
+  rafId = requestAnimationFrame(updateGhostPos);
+}
+
+function updateGhostPos() {
+  rafId = null;
+  if (!ghostEl) return;
+  ghostEl.style.left = (mouseX - ghostOffX) + 'px';
+  ghostEl.style.top = (mouseY - ghostOffY) + 'px';
+}
+
+function removeGhost() {
+  if (ghostEl) { ghostEl.remove(); ghostEl = null; }
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 }
 
 // ─── Drag state ───────────────────────────────────────────────────────────────
 let drag = null;
-// drag = { type: 'card'|'list', el, ghost, listId, cardId, listIndex, cardIndex, startX, startY }
-
-const board = document.getElementById('board');
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 function render() {
@@ -432,6 +398,11 @@ function makeList(list) {
   const header = document.createElement('div');
   header.className = 'list-header';
 
+  const dragHandle = document.createElement('div');
+  dragHandle.className = 'list-drag-handle';
+  dragHandle.title = 'Drag to reorder';
+  dragHandle.innerHTML = '⠿';
+
   const titleInput = document.createElement('input');
   titleInput.className = 'list-title';
   titleInput.value = list.title;
@@ -439,25 +410,21 @@ function makeList(list) {
     list.title = titleInput.value.trim() || 'Untitled';
     save();
   });
-  titleInput.addEventListener('mousedown', e => e.stopPropagation());
 
   const menuBtn = document.createElement('button');
   menuBtn.className = 'list-menu-btn';
   menuBtn.textContent = '···';
   menuBtn.title = 'List options';
-  menuBtn.addEventListener('mousedown', e => e.stopPropagation());
 
-  header.append(titleInput, menuBtn);
+  header.append(dragHandle, titleInput, menuBtn);
 
-  // List drag — from header
-  header.addEventListener('mousedown', (e) => {
-    if (e.target === titleInput || e.target === menuBtn) return;
+  dragHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     startListDrag(e, col, list);
   });
 
   const dropdown = document.createElement('div');
   dropdown.className = 'list-dropdown';
-
   const delBtn = document.createElement('button');
   delBtn.className = 'danger';
   delBtn.textContent = '🗑 Delete this list';
@@ -467,15 +434,13 @@ function makeList(list) {
       save(); render();
     }
   });
-
   dropdown.appendChild(delBtn);
 
   menuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     dropdown.classList.toggle('open');
   });
-
-  document.addEventListener('click', () => dropdown.classList.remove('open'), { capture: false });
+  document.addEventListener('click', () => dropdown.classList.remove('open'));
 
   const cardsEl = document.createElement('div');
   cardsEl.className = 'cards';
@@ -484,22 +449,17 @@ function makeList(list) {
 
   const addForm = document.createElement('div');
   addForm.className = 'add-card-form';
-
   const addInput = document.createElement('textarea');
   addInput.className = 'add-card-input';
   addInput.placeholder = 'Add a card…';
-
   const addActions = document.createElement('div');
   addActions.className = 'add-card-actions';
-
   const addConfirm = document.createElement('button');
   addConfirm.className = 'btn-primary';
   addConfirm.textContent = 'Add card';
-
   const addCancel = document.createElement('button');
   addCancel.className = 'btn-cancel';
   addCancel.innerHTML = '✕';
-
   addActions.append(addConfirm, addCancel);
   addForm.append(addInput, addActions);
 
@@ -532,7 +492,6 @@ function makeList(list) {
   const addCardBtn = document.createElement('button');
   addCardBtn.className = 'add-card-btn';
   addCardBtn.innerHTML = '<span style="font-size:18px;line-height:1">+</span> Add a card';
-
   addCardBtn.addEventListener('click', () => {
     addForm.classList.add('open');
     addCardBtn.style.display = 'none';
@@ -596,25 +555,20 @@ function makeCard(card, list) {
   });
 
   const inner = document.createElement('div');
-  inner.style.flex = '1';
-  inner.style.display = 'flex';
-  inner.style.flexDirection = 'column';
-  inner.style.pointerEvents = 'none';
-
+  inner.style.cssText = 'flex:1;display:flex;flex-direction:column;pointer-events:none;';
   const tags = document.createElement('div');
   tags.className = 'card-tags';
   const tag = document.createElement('div');
   tag.className = 'tag';
   tag.style.background = card.color;
   tags.appendChild(tag);
-
   inner.append(textEl, tags);
   inner.querySelector('.card-text').style.pointerEvents = 'auto';
   el.append(check, inner, delBtn);
 
-  // Card drag
   el.addEventListener('mousedown', (e) => {
-    if (e.target === check || e.target === delBtn || textEl.contentEditable === 'true') return;
+    if (e.target === check || e.target === delBtn) return;
+    if (textEl.contentEditable === 'true') return;
     if (e.target === textEl || textEl.contains(e.target)) return;
     startCardDrag(e, el, card, list);
   });
@@ -625,30 +579,23 @@ function makeCard(card, list) {
 function makeAddListCol() {
   const col = document.createElement('div');
   col.className = 'add-list-col';
-
   const btn = document.createElement('button');
   btn.className = 'add-list-btn';
   btn.innerHTML = '<span style="font-size:18px;line-height:1">+</span> Add a list';
-
   const form = document.createElement('div');
   form.className = 'add-list-form';
-
   const input = document.createElement('input');
   input.className = 'add-list-input';
   input.placeholder = 'List title…';
   input.maxLength = 60;
-
   const actions = document.createElement('div');
   actions.className = 'add-list-actions';
-
   const confirm = document.createElement('button');
   confirm.className = 'btn-primary';
   confirm.textContent = 'Add list';
-
   const cancel = document.createElement('button');
   cancel.className = 'btn-cancel';
   cancel.innerHTML = '✕';
-
   actions.append(confirm, cancel);
   form.append(input, actions);
   col.append(btn, form);
@@ -658,219 +605,179 @@ function makeAddListCol() {
     btn.style.display = 'none';
     input.focus();
   });
-
   confirm.addEventListener('click', () => {
     const title = input.value.trim();
     if (!title) return;
     state.lists.push({ id: uid(), title, cards: [] });
     save(); render();
   });
-
   cancel.addEventListener('click', () => {
     form.classList.remove('open');
     btn.style.display = '';
     input.value = '';
   });
-
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') confirm.click();
     if (e.key === 'Escape') cancel.click();
   });
-
   return col;
 }
 
-// ─── Drag & Drop ──────────────────────────────────────────────────────────────
-
-function createGhost(el, x, y) {
-  const rect = el.getBoundingClientRect();
-  const ghost = el.cloneNode(true);
-  ghost.style.cssText = `
-    position: fixed;
-    left: ${rect.left}px;
-    top: ${rect.top}px;
-    width: ${rect.width}px;
-    opacity: 0.85;
-    pointer-events: none;
-    z-index: 9999;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-    transform: rotate(1.5deg);
-    transition: none;
-  `;
-  document.body.appendChild(ghost);
-  return { ghost, offsetX: x - rect.left, offsetY: y - rect.top };
-}
-
-function moveGhost(ghost, x, y, offsetX, offsetY) {
-  ghost.style.left = (x - offsetX) + 'px';
-  ghost.style.top = (y - offsetY) + 'px';
-}
-
-// ── Card drag ─────────────────────────────────────────────────────────────────
+// ─── Card Drag ────────────────────────────────────────────────────────────────
+let cardPlaceholder = null;
 
 function startCardDrag(e, el, card, list) {
   e.preventDefault();
-  const { ghost, offsetX, offsetY } = createGhost(el, e.clientX, e.clientY);
+  drag = { type: 'card', el, cardId: card.id, srcListId: list.id };
+
+  cardPlaceholder = document.createElement('div');
+  cardPlaceholder.className = 'card-placeholder';
+  cardPlaceholder.style.height = el.offsetHeight + 'px';
+  el.parentNode.insertBefore(cardPlaceholder, el.nextSibling);
   el.classList.add('dragging');
 
-  const placeholder = document.createElement('div');
-  placeholder.className = 'card-placeholder';
+  createGhost(el, e.clientX, e.clientY);
 
-  drag = { type: 'card', el, ghost, offsetX, offsetY, placeholder,
-           cardId: card.id, srcListId: list.id };
-
-  // Insert placeholder where card was
-  el.parentNode.insertBefore(placeholder, el.nextSibling);
-
-  document.addEventListener('mousemove', onCardMove);
+  document.addEventListener('mousemove', onCardMove, { passive: true });
   document.addEventListener('mouseup', onCardUp);
 }
 
 function onCardMove(e) {
   if (!drag || drag.type !== 'card') return;
-  moveGhost(drag.ghost, e.clientX, e.clientY, drag.offsetX, drag.offsetY);
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  scheduleGhostUpdate();
 
-  // Find which cards container we're over
   const cardsEls = document.querySelectorAll('.cards');
-  let targetCards = null;
-  let targetListId = null;
+  let targetCards = null, targetListId = null;
 
   for (const c of cardsEls) {
     const r = c.getBoundingClientRect();
-    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 10 && e.clientY <= r.bottom + 10) {
+    if (e.clientX >= r.left - 8 && e.clientX <= r.right + 8 &&
+        e.clientY >= r.top - 20 && e.clientY <= r.bottom + 20) {
       targetCards = c;
       targetListId = c.dataset.listId;
       break;
     }
   }
-
   if (!targetCards) return;
 
-  // Find insertion point among card children (skip placeholder & dragging card)
-  const children = [...targetCards.children].filter(c => !c.classList.contains('card-placeholder') && !c.classList.contains('dragging'));
-  let inserted = false;
+  const children = [...targetCards.children].filter(c =>
+    !c.classList.contains('card-placeholder') && !c.classList.contains('dragging')
+  );
 
+  let inserted = false;
   for (const child of children) {
     const r = child.getBoundingClientRect();
-    const mid = r.top + r.height / 2;
-    if (e.clientY < mid) {
-      targetCards.insertBefore(drag.placeholder, child);
+    if (e.clientY < r.top + r.height / 2) {
+      targetCards.insertBefore(cardPlaceholder, child);
       inserted = true;
       break;
     }
   }
-  if (!inserted) targetCards.appendChild(drag.placeholder);
+  if (!inserted) targetCards.appendChild(cardPlaceholder);
 }
 
-function onCardUp(e) {
+function onCardUp() {
   if (!drag || drag.type !== 'card') return;
   document.removeEventListener('mousemove', onCardMove);
   document.removeEventListener('mouseup', onCardUp);
 
-  drag.ghost.remove();
   drag.el.classList.remove('dragging');
+  removeGhost();
 
-  // Find the placeholder's parent and position
-  const ph = drag.placeholder;
-  const targetCardsEl = ph.parentNode;
+  const ph = cardPlaceholder;
+  const targetCardsEl = ph ? ph.parentNode : null;
   const targetListId = targetCardsEl ? targetCardsEl.dataset.listId : null;
 
   if (targetListId && targetCardsEl) {
-    const siblings = [...targetCardsEl.children].filter(c => !c.classList.contains('card-placeholder'));
-    const insertIndex = [...targetCardsEl.children].indexOf(ph);
-
-    // Remove card from source list
-    const srcList = state.lists.find(l => l.id === drag.srcListId);
-    const cardObj = srcList.cards.find(c => c.id === drag.cardId);
-    srcList.cards = srcList.cards.filter(c => c.id !== drag.cardId);
-
-    // Insert into target list
-    const tgtList = state.lists.find(l => l.id === targetListId);
-
-    // Count how many real card elements are before the placeholder
     const allChildren = [...targetCardsEl.children];
     let realIndex = 0;
     for (let i = 0; i < allChildren.length; i++) {
       if (allChildren[i] === ph) break;
       if (!allChildren[i].classList.contains('card-placeholder')) realIndex++;
     }
-
+    const srcList = state.lists.find(l => l.id === drag.srcListId);
+    const cardObj = srcList.cards.find(c => c.id === drag.cardId);
+    srcList.cards = srcList.cards.filter(c => c.id !== drag.cardId);
+    const tgtList = state.lists.find(l => l.id === targetListId);
     tgtList.cards.splice(realIndex, 0, cardObj);
     save();
   }
 
-  ph.remove();
+  if (ph) ph.remove();
+  cardPlaceholder = null;
   drag = null;
   render();
 }
 
-// ── List drag ─────────────────────────────────────────────────────────────────
+// ─── List Drag ────────────────────────────────────────────────────────────────
+let listPlaceholder = null;
 
 function startListDrag(e, el, list) {
   e.preventDefault();
-  const { ghost, offsetX, offsetY } = createGhost(el, e.clientX, e.clientY);
+  drag = { type: 'list', el, listId: list.id };
+
+  listPlaceholder = document.createElement('div');
+  listPlaceholder.className = 'list-placeholder';
+  listPlaceholder.style.height = el.offsetHeight + 'px';
+  el.parentNode.insertBefore(listPlaceholder, el.nextSibling);
   el.classList.add('dragging-list');
 
-  const placeholder = document.createElement('div');
-  placeholder.className = 'list-placeholder';
-  placeholder.style.height = el.offsetHeight + 'px';
-  el.parentNode.insertBefore(placeholder, el.nextSibling);
+  createGhost(el, e.clientX, e.clientY);
 
-  drag = { type: 'list', el, ghost, offsetX, offsetY, placeholder, listId: list.id };
-
-  document.addEventListener('mousemove', onListMove);
+  document.addEventListener('mousemove', onListMove, { passive: true });
   document.addEventListener('mouseup', onListUp);
 }
 
 function onListMove(e) {
   if (!drag || drag.type !== 'list') return;
-  moveGhost(drag.ghost, e.clientX, e.clientY, drag.offsetX, drag.offsetY);
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  scheduleGhostUpdate();
 
   const lists = [...board.children].filter(c =>
-    c.classList.contains('list') && !c.classList.contains('dragging-list') && !c.classList.contains('list-placeholder')
+    c.classList.contains('list') && !c.classList.contains('dragging-list')
   );
 
   let inserted = false;
   for (const li of lists) {
     const r = li.getBoundingClientRect();
-    const mid = r.left + r.width / 2;
-    if (e.clientX < mid) {
-      board.insertBefore(drag.placeholder, li);
+    if (e.clientX < r.left + r.width / 2) {
+      board.insertBefore(listPlaceholder, li);
       inserted = true;
       break;
     }
   }
   if (!inserted) {
     const addCol = board.querySelector('.add-list-col');
-    board.insertBefore(drag.placeholder, addCol);
+    board.insertBefore(listPlaceholder, addCol);
   }
 }
 
-function onListUp(e) {
+function onListUp() {
   if (!drag || drag.type !== 'list') return;
   document.removeEventListener('mousemove', onListMove);
   document.removeEventListener('mouseup', onListUp);
 
-  drag.ghost.remove();
   drag.el.classList.remove('dragging-list');
+  removeGhost();
 
-  const ph = drag.placeholder;
+  const ph = listPlaceholder;
   const boardChildren = [...board.children].filter(c => !c.classList.contains('add-list-col'));
   const phIndex = boardChildren.indexOf(ph);
-
-  // Count real list columns before placeholder
   let realIndex = 0;
   for (let i = 0; i < phIndex; i++) {
     if (boardChildren[i].classList.contains('list') && !boardChildren[i].classList.contains('dragging-list')) realIndex++;
   }
 
-  // Reorder state
   const srcIndex = state.lists.findIndex(l => l.id === drag.listId);
   const [removed] = state.lists.splice(srcIndex, 1);
   state.lists.splice(realIndex, 0, removed);
   save();
 
-  ph.remove();
+  if (ph) ph.remove();
+  listPlaceholder = null;
   drag = null;
   render();
 }
